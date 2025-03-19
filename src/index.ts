@@ -257,14 +257,14 @@ class EMDServer {
   private async checkAndInstallEMD(): Promise<void> {
     try {
       // Check if emd is installed
-      await exec('emd --version');
+      await exec('emd version');
       return;
     } catch (error) {
       // If not found, install it
       console.log('EMD not found, installing via pip...');
       await exec('python3 -m pip install --user easy-model-deployer');
       // Verify installation
-      await exec('emd --version');
+      await exec('emd version');
       console.log('EMD installed successfully');
     }
   }
