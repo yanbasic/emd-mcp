@@ -1,6 +1,18 @@
 #!/usr/bin/env node
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { spawnSync } from 'child_process';
+import { existsSync } from 'fs';
+
+// Create virtual environment if it doesn't exist
+const venvPath = '.venv';
+if (!existsSync(venvPath)) {
+  spawnSync('python3', ['-m', 'venv', venvPath], { stdio: 'inherit' });
+}
+
+// Update easy-model-deployer package
+const pipPath = `${venvPath}/bin/pip`;
+spawnSync(pipPath, ['install', '--upgrade', 'easy-model-deployer'], { stdio: 'inherit' });
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -63,8 +75,19 @@ class EMDServer {
       }
     );
 
-    // Check and install EMD if needed
-    this.checkAndInstallEMD().then(() => {
+    // Create virtual environment in project directory if it doesn't exist
+    const venvPath = '/Users/yiyanz/Documents/Cline/MCP/emd-server/.venv';
+    exec(`python3 -m venv ${venvPath}`).then(() => {
+      console.log('Created virtual environment at', venvPath);
+      return this.checkAndInstallEMD();
+    }).catch((error) => {
+      if (error.code === 1 && error.stderr.includes('already exists')) {
+        console.log('Virtual environment already exists at', venvPath);
+        return this.checkAndInstallEMD();
+      }
+      console.error('Failed to create virtual environment:', error);
+      process.exit(1);
+    }).then(() => {
       this.emdInstalled = true;
       this.setupToolHandlers();
     }).catch((error) => {
@@ -256,16 +279,17 @@ class EMDServer {
 
   private async checkAndInstallEMD(): Promise<void> {
     try {
-      // Check if emd is installed
-      await exec('emd version');
+      // Activate virtual environment and check if emd is installed
+      await exec('. /Users/yiyanz/Documents/Cline/MCP/emd-server/.venv/bin/activate && pip install --upgrade easy-model-deployer');
+      await exec('. /Users/yiyanz/Documents/Cline/MCP/emd-server/.venv/bin/activate && emd version');
       return;
     } catch (error) {
       // If not found, install it
-      console.log('EMD not found, installing via pip...');
-      await exec('python3 -m pip install --user easy-model-deployer');
+      console.log('EMD not found, installing via pip in virtual environment...');
+      await exec('. .venv/bin/activate && pip install --upgrade easy-model-deployer');
       // Verify installation
-      await exec('emd version');
-      console.log('EMD installed successfully');
+      await exec('. .venv/bin/activate && emd version');
+      console.log('EMD installed successfully in virtual environment');
     }
   }
 
@@ -280,7 +304,7 @@ class EMDServer {
           isError: true
         };
       }
-      let command = 'emd list-supported-models';
+      let command = '. /Users/yiyanz/Documents/Cline/MCP/emd-server/.venv/bin/activate && emd list-supported-models';
       if (args.model_id) {
         command += ` ${args.model_id}`;
       }
@@ -322,7 +346,7 @@ class EMDServer {
 
   private async deployModel(args: DeployModelArgs): Promise<ServerResult> {
     try {
-      let command = `emd deploy --model-id ${args.model_id}`;
+      let command = `. /Users/yiyanz/Documents/Cline/MCP/emd-server/.venv/bin/activate && emd deploy --model-id ${args.model_id}`;
       
       if (args.instance_type) {
         command += ` --instance-type ${args.instance_type}`;
@@ -408,7 +432,7 @@ class EMDServer {
 
   private async checkStatus(args: StatusArgs): Promise<ServerResult> {
     try {
-      let command = 'emd status';
+      let command = '. /Users/yiyanz/Documents/Cline/MCP/emd-server/.venv/bin/activate && emd status';
       if (args.model_id) {
         command += ` ${args.model_id}`;
       }
@@ -543,7 +567,7 @@ process.on('close', () => {
 
   private async destroyModel(args: DestroyModelArgs): Promise<ServerResult> {
     try {
-      let command = `emd destroy ${args.model_id}`;
+      let command = `. /Users/yiyanz/Documents/Cline/MCP/emd-server/.venv/bin/activate && emd destroy ${args.model_id}`;
       if (args.model_tag) {
         command += ` ${args.model_tag}`;
       }

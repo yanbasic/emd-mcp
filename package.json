@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc && chmod +x build/index.js",
-    "start": "node build/index.js"
+    "start": "node build/index.js",
+    "setup-python": "python3 -m venv .venv && . .venv/bin/activate && pip install --upgrade pip && pip install easy-model-deployer",
+    "prestart": "npm run setup-python"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.7.0"
