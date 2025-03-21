@@ -20,3 +20,7 @@ Thumbs.db
 # Node.js installation
 node-v20.11.1-darwin-arm64/
 node-v20.11.1-darwin-arm64.tar.gz
+
+# Python virtual environments
+.venv/
+venv/
